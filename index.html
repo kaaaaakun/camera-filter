@@ -90,6 +90,30 @@
       background: rgba(53, 122, 82, 0.9);
     }
 
+    .camera-select-container {
+      display: flex;
+      justify-content: center;
+      padding: 0 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    select {
+      padding: 0.5rem 0.8rem;
+      border: 2px solid #3d3d5c;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      background: #2d2d44;
+      color: #ccc;
+      cursor: pointer;
+      max-width: 300px;
+      width: 100%;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: #6c63ff;
+    }
+
     .error-message {
       color: #ff6b6b;
       margin: 2rem;
@@ -105,6 +129,11 @@
     <button id="btn-save" class="save-btn">保存</button>
   </div>
   <video id="video" autoplay playsinline></video>
+  <div class="camera-select-container">
+    <select id="camera-select">
+      <option value="">カメラを取得中...</option>
+    </select>
+  </div>
   <div class="controls">
     <button id="btn-none" class="active" data-filter="none">オリジナル</button>
     <button id="btn-mono" data-filter="monochrome">モノクロ</button>
@@ -119,9 +148,11 @@
     const ctx = canvas.getContext("2d");
     const errorEl = document.getElementById("error");
     const buttons = document.querySelectorAll("[data-filter]");
+    const cameraSelect = document.getElementById("camera-select");
 
     let currentFilter = "none";
     let animationId = null;
+    let selectedDeviceId = "";
 
     buttons.forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -182,14 +213,60 @@
       animationId = requestAnimationFrame(draw);
     }
 
+    async function populateCameraList() {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter((d) => d.kind === "videoinput");
+
+      cameraSelect.innerHTML = "";
+
+      if (videoDevices.length === 0) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "カメラが見つかりません";
+        cameraSelect.appendChild(option);
+        return;
+      }
+
+      videoDevices.forEach((device, index) => {
+        const option = document.createElement("option");
+        option.value = device.deviceId;
+        option.textContent = device.label || "カメラ " + (index + 1);
+        cameraSelect.appendChild(option);
+      });
+
+      // 前回選択したデバイスがまだ存在すればそれを維持する
+      const stillExists = videoDevices.some((d) => d.deviceId === selectedDeviceId);
+      if (selectedDeviceId && stillExists) {
+        cameraSelect.value = selectedDeviceId;
+      } else {
+        selectedDeviceId = videoDevices[0].deviceId;
+        cameraSelect.value = selectedDeviceId;
+      }
+    }
+
+    cameraSelect.addEventListener("change", () => {
+      selectedDeviceId = cameraSelect.value;
+      stopCamera();
+      startCamera();
+    });
+
     async function startCamera() {
       try {
+        // デバイスIDが指定されていればそれを使用し、なければ背面カメラを優先
+        const videoConstraints = selectedDeviceId
+          ? { deviceId: { exact: selectedDeviceId } }
+          : { facingMode: "environment" };
+
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
+          video: videoConstraints,
           audio: false,
         });
         video.srcObject = stream;
         await video.play();
+
+        // カメラ権限取得後にデバイスラベルが取得可能になるため、一覧を更新する
+        await populateCameraList();
+
         draw();
       } catch (err) {
         errorEl.hidden = false;
