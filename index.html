@@ -78,12 +78,16 @@
     }
 
     button.save-btn {
-      background: #2a6041;
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      background: rgba(42, 96, 65, 0.85);
       color: #ddd;
+      z-index: 1;
     }
 
     button.save-btn:hover {
-      background: #357a52;
+      background: rgba(53, 122, 82, 0.9);
     }
 
     .error-message {
@@ -98,6 +102,7 @@
   <h1>Camera Filter</h1>
   <div class="canvas-container">
     <canvas id="canvas"></canvas>
+    <button id="btn-save" class="save-btn">保存</button>
   </div>
   <video id="video" autoplay playsinline></video>
   <div class="controls">
@@ -105,7 +110,6 @@
     <button id="btn-mono" data-filter="monochrome">モノクロ</button>
     <button id="btn-invert" data-filter="invert">カラー反転</button>
     <button id="btn-mono-invert" data-filter="monoInvert">モノクロ反転</button>
-    <button id="btn-save" class="save-btn">保存</button>
   </div>
   <p class="error-message" id="error" hidden></p>
 
