@@ -252,10 +252,10 @@
 
     async function startCamera() {
       try {
-        // デバイスIDが指定されていればそれを使用し、なければ背面カメラを優先
+        // デバイスIDが指定されていればそれを使用し、なければ任意のカメラに接続
         const videoConstraints = selectedDeviceId
           ? { deviceId: { exact: selectedDeviceId } }
-          : { facingMode: "environment" };
+          : true;
 
         const stream = await navigator.mediaDevices.getUserMedia({
           video: videoConstraints,
