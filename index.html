@@ -205,6 +205,33 @@
       link.click();
     });
 
+    // ページ表示時にカメラストリームが停止していれば再接続する
+    function stopCamera() {
+      if (animationId !== null) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach((track) => track.stop());
+        video.srcObject = null;
+      }
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        stopCamera();
+      } else {
+        startCamera();
+      }
+    });
+
+    // bfcache(戻る/進む)でページが復元された場合にも対応
+    window.addEventListener("pageshow", (event) => {
+      if (event.persisted) {
+        startCamera();
+      }
+    });
+
     startCamera();
   </script>
 </body>
