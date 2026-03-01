@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>カラープリント編集</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #000;
+      color: #eee;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .preview-area {
+      position: relative;
+      width: 100%;
+      max-width: 640px;
+      background: #111;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 300px;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .placeholder {
+      color: rgba(255, 255, 255, 0.3);
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .controls-panel {
+      width: 100%;
+      max-width: 640px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.4);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .slider-label {
+      width: 18px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .slider-label.yellow { color: #e8d44d; }
+    .slider-label.magenta { color: #d94fa0; }
+    .slider-label.cyan { color: #4dc9e8; }
+    .slider-label.exposure { color: #ccc; }
+
+    input[type="range"] {
+      flex: 1;
+      height: 4px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 2px;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      border: none;
+      cursor: pointer;
+    }
+
+    .slider-value {
+      width: 40px;
+      font-size: 0.8rem;
+      text-align: right;
+      color: rgba(255, 255, 255, 0.6);
+      flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+      padding-top: 4px;
+    }
+
+    .btn {
+      padding: 8px 18px;
+      border: 1.5px solid rgba(255, 255, 255, 0.25);
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    .file-input-wrapper {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .file-input-wrapper input[type="file"] {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .nav-link {
+      font-size: 0.7rem;
+      color: rgba(255, 255, 255, 0.4);
+      text-decoration: none;
+      padding: 8px 0;
+    }
+
+    .nav-link:hover {
+      color: rgba(255, 255, 255, 0.7);
+    }
+  </style>
+</head>
+<body>
+  <div class="preview-area">
+    <canvas id="canvas" hidden></canvas>
+    <p class="placeholder" id="placeholder">画像を読み込んでください</p>
+  </div>
+
+  <div class="controls-panel">
+    <div>
+      <div class="section-label">YMC色補正</div>
+      <div class="slider-group">
+        <div class="slider-row">
+          <span class="slider-label yellow">Y</span>
+          <input type="range" id="slider-y" min="-100" max="100" value="0" step="1">
+          <span class="slider-value" id="val-y">0</span>
+        </div>
+        <div class="slider-row">
+          <span class="slider-label magenta">M</span>
+          <input type="range" id="slider-m" min="-100" max="100" value="0" step="1">
+          <span class="slider-value" id="val-m">0</span>
+        </div>
+        <div class="slider-row">
+          <span class="slider-label cyan">C</span>
+          <input type="range" id="slider-c" min="-100" max="100" value="0" step="1">
+          <span class="slider-value" id="val-c">0</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">露光量</div>
+      <div class="slider-group">
+        <div class="slider-row">
+          <span class="slider-label exposure">EV</span>
+          <input type="range" id="slider-ev" min="-30" max="30" value="0" step="1">
+          <span class="slider-value" id="val-ev">0.0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="button-row">
+      <div class="file-input-wrapper">
+        <button class="btn" type="button">画像を選択</button>
+        <input type="file" id="file-input" accept="image/*">
+      </div>
+      <button class="btn" id="btn-reset">リセット</button>
+      <button class="btn" id="btn-save">保存</button>
+    </div>
+
+    <div style="text-align: center;">
+      <a href="index.html" class="nav-link">カメラに戻る</a>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const placeholder = document.getElementById("placeholder");
+
+    const sliderY = document.getElementById("slider-y");
+    const sliderM = document.getElementById("slider-m");
+    const sliderC = document.getElementById("slider-c");
+    const sliderEV = document.getElementById("slider-ev");
+    const valY = document.getElementById("val-y");
+    const valM = document.getElementById("val-m");
+    const valC = document.getElementById("val-c");
+    const valEV = document.getElementById("val-ev");
+
+    // 編集前のオリジナル画像データを保持
+    let originalImageData = null;
+
+    function loadImage(src) {
+      const img = new Image();
+      img.onload = () => {
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        ctx.drawImage(img, 0, 0);
+        originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        canvas.hidden = false;
+        placeholder.hidden = true;
+        applyAdjustments();
+      };
+      img.src = src;
+    }
+
+    // localStorageからカメラページの画像を読み込む
+    const storedImage = localStorage.getItem("editImage");
+    if (storedImage) {
+      loadImage(storedImage);
+      localStorage.removeItem("editImage");
+    }
+
+    document.getElementById("file-input").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        loadImage(event.target.result);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function applyAdjustments() {
+      if (!originalImageData) return;
+
+      const y = parseInt(sliderY.value, 10);
+      const m = parseInt(sliderM.value, 10);
+      const c = parseInt(sliderC.value, 10);
+      const ev = parseInt(sliderEV.value, 10) / 10;
+
+      const src = originalImageData.data;
+      const output = ctx.createImageData(canvas.width, canvas.height);
+      const dst = output.data;
+
+      // 露光量の倍率（プリント: 露光増=暗くなる）
+      // ev > 0で暗く、ev < 0で明るく
+      const exposureFactor = Math.pow(2, -ev);
+
+      // YMC補正量をRGBチャネルの減衰に変換（0〜1のスケール）
+      // Y+: Bを減らす、M+: Gを減らす、C+: Rを減らす
+      const MAX_ADJUSTMENT = 100;
+      const rScale = 1.0 - Math.max(0, c) / MAX_ADJUSTMENT;
+      const gScale = 1.0 - Math.max(0, m) / MAX_ADJUSTMENT;
+      const bScale = 1.0 - Math.max(0, y) / MAX_ADJUSTMENT;
+      // 負の値は補色チャネルのブースト（C-: R増、M-: G増、Y-: B増）
+      const rBoost = 1.0 + Math.max(0, -c) / MAX_ADJUSTMENT;
+      const gBoost = 1.0 + Math.max(0, -m) / MAX_ADJUSTMENT;
+      const bBoost = 1.0 + Math.max(0, -y) / MAX_ADJUSTMENT;
+
+      const rMul = rScale * rBoost * exposureFactor;
+      const gMul = gScale * gBoost * exposureFactor;
+      const bMul = bScale * bBoost * exposureFactor;
+
+      for (let i = 0; i < src.length; i += 4) {
+        dst[i] = Math.min(255, Math.round(src[i] * rMul));
+        dst[i + 1] = Math.min(255, Math.round(src[i + 1] * gMul));
+        dst[i + 2] = Math.min(255, Math.round(src[i + 2] * bMul));
+        dst[i + 3] = src[i + 3];
+      }
+
+      ctx.putImageData(output, 0, 0);
+    }
+
+    function updateDisplay() {
+      valY.textContent = sliderY.value;
+      valM.textContent = sliderM.value;
+      valC.textContent = sliderC.value;
+      valEV.textContent = (parseInt(sliderEV.value, 10) / 10).toFixed(1);
+      applyAdjustments();
+    }
+
+    [sliderY, sliderM, sliderC, sliderEV].forEach((slider) => {
+      slider.addEventListener("input", updateDisplay);
+    });
+
+    document.getElementById("btn-reset").addEventListener("click", () => {
+      sliderY.value = 0;
+      sliderM.value = 0;
+      sliderC.value = 0;
+      sliderEV.value = 0;
+      updateDisplay();
+    });
+
+    document.getElementById("btn-save").addEventListener("click", () => {
+      if (!originalImageData) return;
+      const link = document.createElement("a");
+      link.download = "edit-" + Date.now() + ".png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    });
+  </script>
+</body>
+</html>

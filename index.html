@@ -142,6 +142,7 @@
       </div>
       <div class="bottom-bar">
         <span class="app-title">Camera Filter</span>
+        <button id="btn-edit" class="save-btn">編集</button>
         <button id="btn-save" class="save-btn">保存</button>
       </div>
     </div>
@@ -254,6 +255,12 @@
           "カメラへのアクセスが拒否されたか、カメラが見つかりません: " + err.message;
       }
     }
+
+    document.getElementById("btn-edit").addEventListener("click", () => {
+      const dataUrl = canvas.toDataURL("image/png");
+      localStorage.setItem("editImage", dataUrl);
+      window.location.href = "edit.html";
+    });
 
     document.getElementById("btn-save").addEventListener("click", () => {
       const link = document.createElement("a");
