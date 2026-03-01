@@ -110,6 +110,7 @@
     <button id="btn-mono" data-filter="monochrome">モノクロ</button>
     <button id="btn-invert" data-filter="invert">カラー反転</button>
     <button id="btn-mono-invert" data-filter="monoInvert">モノクロ反転</button>
+    <button id="btn-film-neg" data-filter="filmNegative">フィルム補正</button>
   </div>
   <p class="error-message" id="error" hidden></p>
 
@@ -158,6 +159,40 @@
       }
     }
 
+    // C-41フィルムのオレンジベース基準値（典型的なKodak/Fuji系ネガフィルム）
+    const FILM_ORANGE_BASE_R = 180;
+    const FILM_ORANGE_BASE_G = 120;
+    const FILM_ORANGE_BASE_B = 80;
+    const FILM_GAMMA = 0.55;
+
+    function applyFilmNegative(data) {
+      for (let i = 0; i < data.length; i += 4) {
+        // オレンジベースで正規化（0〜1の範囲にスケーリング）
+        let r = data[i] / FILM_ORANGE_BASE_R;
+        let g = data[i + 1] / FILM_ORANGE_BASE_G;
+        let b = data[i + 2] / FILM_ORANGE_BASE_B;
+
+        // 1.0を超えた値をクリップ
+        r = Math.min(r, 1.0);
+        g = Math.min(g, 1.0);
+        b = Math.min(b, 1.0);
+
+        // 反転して正像化
+        r = 1.0 - r;
+        g = 1.0 - g;
+        b = 1.0 - b;
+
+        // ガンマ補正でコントラストを調整
+        r = Math.pow(r, FILM_GAMMA);
+        g = Math.pow(g, FILM_GAMMA);
+        b = Math.pow(b, FILM_GAMMA);
+
+        data[i] = Math.round(r * 255);
+        data[i + 1] = Math.round(g * 255);
+        data[i + 2] = Math.round(b * 255);
+      }
+    }
+
     function draw() {
       if (video.readyState >= video.HAVE_CURRENT_DATA) {
         canvas.width = video.videoWidth;
@@ -174,6 +209,8 @@
             applyInvert(pixels);
           } else if (currentFilter === "monoInvert") {
             applyMonoInvert(pixels);
+          } else if (currentFilter === "filmNegative") {
+            applyFilmNegative(pixels);
           }
 
           ctx.putImageData(imageData, 0, 0);
