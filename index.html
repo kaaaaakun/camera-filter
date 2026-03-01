@@ -163,33 +163,18 @@
     const FILM_ORANGE_BASE_R = 180;
     const FILM_ORANGE_BASE_G = 120;
     const FILM_ORANGE_BASE_B = 80;
-    const FILM_GAMMA = 0.55;
 
     function applyFilmNegative(data) {
       for (let i = 0; i < data.length; i += 4) {
         // オレンジベースで正規化（0〜1の範囲にスケーリング）
-        let r = data[i] / FILM_ORANGE_BASE_R;
-        let g = data[i + 1] / FILM_ORANGE_BASE_G;
-        let b = data[i + 2] / FILM_ORANGE_BASE_B;
-
-        // 1.0を超えた値をクリップ
-        r = Math.min(r, 1.0);
-        g = Math.min(g, 1.0);
-        b = Math.min(b, 1.0);
+        const r = Math.min(data[i] / FILM_ORANGE_BASE_R, 1.0);
+        const g = Math.min(data[i + 1] / FILM_ORANGE_BASE_G, 1.0);
+        const b = Math.min(data[i + 2] / FILM_ORANGE_BASE_B, 1.0);
 
         // 反転して正像化
-        r = 1.0 - r;
-        g = 1.0 - g;
-        b = 1.0 - b;
-
-        // ガンマ補正でコントラストを調整
-        r = Math.pow(r, FILM_GAMMA);
-        g = Math.pow(g, FILM_GAMMA);
-        b = Math.pow(b, FILM_GAMMA);
-
-        data[i] = Math.round(r * 255);
-        data[i + 1] = Math.round(g * 255);
-        data[i + 2] = Math.round(b * 255);
+        data[i] = Math.round((1.0 - r) * 255);
+        data[i + 1] = Math.round((1.0 - g) * 255);
+        data[i + 2] = Math.round((1.0 - b) * 255);
       }
     }
 
