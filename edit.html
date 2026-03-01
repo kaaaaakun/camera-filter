@@ -192,17 +192,17 @@
       <div class="slider-group">
         <div class="slider-row">
           <span class="slider-label yellow">Y</span>
-          <input type="range" id="slider-y" min="-100" max="100" value="0" step="1">
+          <input type="range" id="slider-y" min="0" max="200" value="0" step="1">
           <span class="slider-value" id="val-y">0</span>
         </div>
         <div class="slider-row">
           <span class="slider-label magenta">M</span>
-          <input type="range" id="slider-m" min="-100" max="100" value="0" step="1">
+          <input type="range" id="slider-m" min="0" max="200" value="0" step="1">
           <span class="slider-value" id="val-m">0</span>
         </div>
         <div class="slider-row">
           <span class="slider-label cyan">C</span>
-          <input type="range" id="slider-c" min="-100" max="100" value="0" step="1">
+          <input type="range" id="slider-c" min="0" max="200" value="0" step="1">
           <span class="slider-value" id="val-c">0</span>
         </div>
       </div>
@@ -298,20 +298,12 @@
       // ev > 0で暗く、ev < 0で明るく
       const exposureFactor = Math.pow(2, -ev);
 
-      // YMC補正量をRGBチャネルの減衰に変換（0〜1のスケール）
+      // YMC補正量をRGBチャネルの減衰に変換
       // Y+: Bを減らす、M+: Gを減らす、C+: Rを減らす
-      const MAX_ADJUSTMENT = 100;
-      const rScale = 1.0 - Math.max(0, c) / MAX_ADJUSTMENT;
-      const gScale = 1.0 - Math.max(0, m) / MAX_ADJUSTMENT;
-      const bScale = 1.0 - Math.max(0, y) / MAX_ADJUSTMENT;
-      // 負の値は補色チャネルのブースト（C-: R増、M-: G増、Y-: B増）
-      const rBoost = 1.0 + Math.max(0, -c) / MAX_ADJUSTMENT;
-      const gBoost = 1.0 + Math.max(0, -m) / MAX_ADJUSTMENT;
-      const bBoost = 1.0 + Math.max(0, -y) / MAX_ADJUSTMENT;
-
-      const rMul = rScale * rBoost * exposureFactor;
-      const gMul = gScale * gBoost * exposureFactor;
-      const bMul = bScale * bBoost * exposureFactor;
+      const MAX_ADJUSTMENT = 200;
+      const rMul = (1.0 - c / MAX_ADJUSTMENT) * exposureFactor;
+      const gMul = (1.0 - m / MAX_ADJUSTMENT) * exposureFactor;
+      const bMul = (1.0 - y / MAX_ADJUSTMENT) * exposureFactor;
 
       for (let i = 0; i < src.length; i += 4) {
         dst[i] = Math.min(255, Math.round(src[i] * rMul));
